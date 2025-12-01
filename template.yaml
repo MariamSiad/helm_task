@@ -1,0 +1,92 @@
+---
+# Source: myapp/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: task1
+  labels:
+    helm.sh/chart: myapp-0.1.0
+    app.kubernetes.io/name: myapp
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: myapp/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: task1
+  labels:
+    helm.sh/chart: myapp-0.1.0
+    app.kubernetes.io/name: myapp
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: myapp
+    app.kubernetes.io/instance: release-name
+---
+# Source: myapp/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task1
+  labels:
+    helm.sh/chart: myapp-0.1.0
+    app.kubernetes.io/name: myapp
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: myapp
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: myapp-0.1.0
+        app.kubernetes.io/name: myapp
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: task1
+      containers:
+        - name: myapp
+          image: "nginx:1.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+---
+# Source: myapp/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "task1-test-connection"
+  labels:
+    helm.sh/chart: myapp-0.1.0
+    app.kubernetes.io/name: myapp
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['task1:80']
+  restartPolicy: Never
